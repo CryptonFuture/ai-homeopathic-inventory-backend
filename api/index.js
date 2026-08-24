@@ -1,6 +1,6 @@
 import express from "express";
-import mongoose from "mongoose";
 import cors from "cors";
+import mongoose from "mongoose";
 
 import medicineRoutes from "../routes/medicineRoutes.js";
 
@@ -9,36 +9,33 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB connection
-let isConnected = false;
+let cachedConnection = null;
 
 const connectDB = async () => {
-  if (isConnected) {
-    return;
+  if (cachedConnection) {
+    return cachedConnection;
   }
 
   if (!process.env.MONGODB_URI) {
-    throw new Error("MONGODB_URI is missing");
+    throw new Error("MONGODB_URI environment variable is missing");
   }
 
-  await mongoose.connect(process.env.MONGODB_URI, {
+  cachedConnection = await mongoose.connect(process.env.MONGODB_URI, {
     serverSelectionTimeoutMS: 10000,
   });
 
-  isConnected = true;
-
-  console.log("MongoDB Connected");
+  return cachedConnection;
 };
 
-// Root
+// Test route WITHOUT MongoDB
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "AI Homeopathic Inventory API",
+    message: "AI Homeopathic Inventory API is running",
   });
 });
 
-// API health
+// API test
 app.get("/api", async (req, res) => {
   try {
     await connectDB();
@@ -46,10 +43,10 @@ app.get("/api", async (req, res) => {
     res.status(200).json({
       success: true,
       message: "API is working",
-      database: "MongoDB Connected",
+      database: "MongoDB connected",
     });
   } catch (error) {
-    console.error(error);
+    console.error("MongoDB ERROR:", error);
 
     res.status(500).json({
       success: false,
@@ -59,15 +56,15 @@ app.get("/api", async (req, res) => {
   }
 });
 
-// Medicine routes
+// Medicine API
 app.use("/api/medicines", async (req, res, next) => {
   try {
     await connectDB();
     next();
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("Database connection error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Database connection failed",
       error: error.message,
