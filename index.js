@@ -1,94 +1,78 @@
 import express from "express";
-import cors from "cors";
 import mongoose from "mongoose";
+import cors from "cors";
 
 import medicineRoutes from "../routes/medicineRoutes.js";
 
 const app = express();
 
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  })
-);
-
+app.use(cors());
 app.use(express.json());
 
-// MongoDB cached connection for Vercel
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = {
-    conn: null,
-    promise: null,
-  };
-}
+// MongoDB connection
+let isConnected = false;
 
 const connectDB = async () => {
-  if (cached.conn) {
-    return cached.conn;
+  if (isConnected) {
+    return;
   }
 
-  if (!cached.promise) {
-    const options = {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10,
-    };
-
-    cached.promise = mongoose.connect(
-      process.env.MONGODB_URI,
-      options
-    );
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI is missing");
   }
 
-  try {
-    cached.conn = await cached.promise;
-  } catch (error) {
-    cached.promise = null;
-    throw error;
-  }
+  await mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 10000,
+  });
 
-  return cached.conn;
+  isConnected = true;
+
+  console.log("MongoDB Connected");
 };
 
-// Database connection middleware
-app.use(async (req, res, next) => {
+// Root
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "AI Homeopathic Inventory API",
+  });
+});
+
+// API health
+app.get("/api", async (req, res) => {
   try {
     await connectDB();
-    next();
-  } catch (error) {
-    console.error("MongoDB Error:", error);
 
-    return res.status(500).json({
+    res.status(200).json({
+      success: true,
+      message: "API is working",
+      database: "MongoDB Connected",
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
       success: false,
-      message: "Database connection failed",
+      message: "MongoDB connection failed",
       error: error.message,
     });
   }
 });
 
-// Health check
-app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "AI Homeopathic Inventory API is running 🚀",
-  });
-});
+// Medicine routes
+app.use("/api/medicines", async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database Error:", error);
 
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    database:
-      mongoose.connection.readyState === 1
-        ? "connected"
-        : "disconnected",
-  });
-});
-
-app.use("/api/medicines", medicineRoutes);
+    res.status(500).json({
+      success: false,
+      message: "Database connection failed",
+      error: error.message,
+    });
+  }
+}, medicineRoutes);
 
 export default app;
