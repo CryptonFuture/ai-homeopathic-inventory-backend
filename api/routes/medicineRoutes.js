@@ -6,7 +6,7 @@ import {
   updateMedicine,
   deleteMedicine,
   checkMedicineWithAI
-} from "../controllers/medicineController.js";
+} from "../../controllers/medicineController.js";
 
 
 const router = express.Router();
