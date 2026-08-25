@@ -11,9 +11,14 @@ const connectDB = async () => {
     const connection = await mongoose.connect(
       process.env.MONGO_URI,
       {
-        serverSelectionTimeoutMS: 10000,
-        connectTimeoutMS: 10000,
-        socketTimeoutMS: 45000,
+        // MongoDB server ko select/connect karne ke liye 60 seconds
+        serverSelectionTimeoutMS: 60000,
+
+        // Initial connection ke liye 60 seconds
+        connectTimeoutMS: 60000,
+
+        // Socket inactivity timeout 60 seconds
+        socketTimeoutMS: 60000,
       }
     );
 
@@ -25,8 +30,6 @@ const connectDB = async () => {
 
   } catch (error) {
     console.error("MongoDB Error:", error.message);
-
-    // Vercel mein process.exit(1) use na karein
     throw error;
   }
 };
