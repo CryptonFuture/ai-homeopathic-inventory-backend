@@ -4,8 +4,6 @@ import {
   analyzeMedicineWithAI
 } from "../services/aiService.js";
 
-import connectDB from "../config/db.js";
-
 
 // ===============================
 // GET ALL MEDICINES
@@ -16,8 +14,6 @@ export const getMedicines = async (
   res
 ) => {
   try {
-    await connectDB()
-    
     const medicines = await Medicine.find()
       .sort({
         name: 1

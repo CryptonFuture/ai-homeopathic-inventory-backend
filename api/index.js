@@ -1,8 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-
-import connectDB from "../config/db.js";
+import mongoose from "mongoose";
 
 import medicineRoutes
   from "./routes/medicineRoutes.js";
@@ -12,6 +11,22 @@ dotenv.config();
 
 const app = express();
 
+mongoose.connect(process.env.MONGODB_URI);
+
+mongoose.connection.on('connected', () => {
+
+    console.log('connected with MongoDB database');
+
+});
+
+mongoose.connection.on('error', (error) => {
+
+    console.log('connection fail');
+    console.log(error);
+
+});
+
+
 
 app.use(cors());
 
@@ -20,9 +35,6 @@ app.use(
     limit: "10mb"
   })
 );
-
-
-connectDB();
 
 
 app.get(
