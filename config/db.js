@@ -1,18 +1,42 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-const connectDB = async () => {
-  try {
-    const connection = await mongoose.connect(
-      process.env.MONGO_URI
-    );
+let cached = global.mongoose;
 
-    console.log(
-      `MongoDB Connected: ${connection.connection.host}`
-    );
-  } catch (error) {
-    console.error("MongoDB Error:", error.message);
-    process.exit(1);
+if (!cached) {
+  cached = global.mongoose = {
+    conn: null,
+    promise: null,
+  };
+}
+
+async function connectDB() {
+  if (cached.conn) {
+    return cached.conn;
   }
-};
 
-export default connectDB;
+  if (!cached.promise) {
+    const options = {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 10000,
+    };
+
+    cached.promise = mongoose
+      .connect(process.env.MONGODB_URI, options)
+      .then((mongoose) => {
+        console.log("MongoDB Connected");
+        return mongoose;
+      });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (error) {
+    cached.promise = null;
+    console.error("MongoDB Error:", error);
+    throw error;
+  }
+
+  return cached.conn;
+}
+
+module.exports = connectDB;
