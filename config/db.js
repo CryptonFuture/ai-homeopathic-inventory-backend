@@ -2,16 +2,23 @@ import mongoose from "mongoose";
 
 const connectDB = async () => {
   try {
-    const connection = await mongoose.connect(
-      process.env.MONGO_URI
-    );
+    if (mongoose.connection.readyState === 1) {
+      console.log("MongoDB already connected");
+      return;
+    }
 
-    console.log(
-      `MongoDB Connected: ${connection.connection.host}`
-    );
+    if (!process.env.MONGO_URI) {
+      throw new Error("MONGO_URI is not defined");
+    }
+
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error("MongoDB Error:", error.message);
-    process.exit(1);
+    console.error("MongoDB Connection Error:", error.message);
+    throw error;
   }
 };
 
