@@ -6,7 +6,7 @@ export const analyzeMedicineWithAI = async (
 ) => {
   try {
     const response = await axios.post(
-      `${process.env.PYTHON_AI_URL}/analyze-medicine`,
+      `https://ai-homeopathic-python-service.vercel.app/analyze-medicine`,
       {
         medicine,
         medicines: medicines.map((item) => ({
