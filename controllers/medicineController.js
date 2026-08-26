@@ -2,7 +2,7 @@ import Medicine from "../models/Medicine.js";
 
 import {
   analyzeMedicineWithAI
-} from "../api/services/aiService.js";
+} from "../services/aiService.js";
 
 import connectDB from "../config/db.js";
 
